@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harfolog – Türkçe Kelime Bulma Oyunu</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green:  #538d4e;
+      --gold:   #b59f3b;
+      --red:    #e74c3c;
+      --bg:     #121213;
+      --bg2:    #1a1a1b;
+      --bg3:    #272729;
+      --text:   #ffffff;
+      --muted:  #818384;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 40px;
+      background: rgba(18,18,19,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--bg3);
+    }
+    .nav-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 3px;
+      color: var(--green);
+    }
+    .nav-logo span { color: var(--gold); }
+    .nav-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: color .2s;
+    }
+    .nav-link:hover { color: var(--text); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Animated background grid */
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--bg3) 1px, transparent 1px),
+        linear-gradient(90deg, var(--bg3) 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: 0.2;
+      animation: gridDrift 20s linear infinite;
+    }
+    @keyframes gridDrift {
+      from { transform: translateY(0); }
+      to   { transform: translateY(60px); }
+    }
+
+    .hero-content { position: relative; z-index: 1; }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg2);
+      border: 1px solid var(--bg3);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      animation: fadeUp .6s ease both;
+    }
+    .hero-badge::before {
+      content: '●';
+      color: var(--green);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .hero-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(80px, 15vw, 160px);
+      letter-spacing: 8px;
+      line-height: 0.9;
+      animation: fadeUp .6s .1s ease both;
+      background: linear-gradient(135deg, #fff 0%, #538d4e 50%, #b59f3b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: clamp(13px, 2vw, 16px);
+      color: var(--muted);
+      margin-top: 20px;
+      letter-spacing: 2px;
+      animation: fadeUp .6s .2s ease both;
+    }
+
+    /* Tile demo */
+    .tile-demo {
+      display: flex;
+      gap: 8px;
+      margin: 40px auto;
+      animation: fadeUp .6s .3s ease both;
+    }
+    .tile {
+      width: clamp(44px, 9vw, 60px);
+      height: clamp(44px, 9vw, 60px);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(22px, 4vw, 32px);
+      font-weight: 900;
+      letter-spacing: 1px;
+      border: 2px solid transparent;
+      animation: flipIn .4s ease both;
+    }
+    .tile:nth-child(1) { background: var(--green);  animation-delay: .5s; }
+    .tile:nth-child(2) { background: var(--gold);   animation-delay: .6s; }
+    .tile:nth-child(3) { background: var(--bg3);    animation-delay: .7s; border-color: var(--muted); }
+    .tile:nth-child(4) { background: var(--green);  animation-delay: .8s; }
+    .tile:nth-child(5) { background: var(--gold);   animation-delay: .9s; }
+    .tile:nth-child(6) { background: var(--green);  animation-delay:1.0s; }
+    .tile:nth-child(7) { background: var(--bg3);    animation-delay:1.1s; border-color: var(--muted); }
+	.tile:nth-child(8) { background: var(--gold);   animation-delay: .9s; }
+
+    @keyframes flipIn {
+      from { transform: rotateX(90deg) scale(.8); opacity: 0; }
+      to   { transform: rotateX(0deg) scale(1);   opacity: 1; }
+    }
+
+    .cta-group {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: fadeUp .6s .5s ease both;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--green);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 900;
+      font-size: 15px;
+      padding: 16px 32px;
+      border-radius: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: transform .2s, box-shadow .2s;
+      box-shadow: 0 4px 24px rgba(83,141,78,.35);
+    }
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(83,141,78,.5); }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: transparent;
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 16px 32px;
+      border-radius: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border: 1px solid var(--bg3);
+      transition: color .2s, border-color .2s;
+    }
+    .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      background: var(--bg2);
+      border-top: 1px solid var(--bg3);
+      border-bottom: 1px solid var(--bg3);
+      padding: 28px 40px;
+      display: flex;
+      justify-content: center;
+      gap: clamp(32px, 6vw, 80px);
+      flex-wrap: wrap;
+    }
+    .stat { text-align: center; }
+    .stat-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 40px;
+      letter-spacing: 2px;
+      color: var(--green);
+    }
+    .stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* ── SECTION COMMON ── */
+    section { padding: 100px 24px; position: relative; z-index: 1; }
+    .section-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--gold);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(40px, 7vw, 72px);
+      letter-spacing: 3px;
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+    .section-desc {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+      max-width: 520px;
+    }
+
+    /* ── FEATURES ── */
+    .features { max-width: 1100px; margin: 0 auto; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 60px;
+    }
+    .feature-card {
+      background: var(--bg2);
+      border: 1px solid var(--bg3);
+      border-radius: 16px;
+      padding: 28px;
+      transition: transform .2s, border-color .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .feature-card:hover { transform: translateY(-4px); border-color: var(--bg3); }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon { font-size: 36px; margin-bottom: 16px; }
+    .feature-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .feature-desc { color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+    /* ── MODES ── */
+    .modes-section {
+      background: var(--bg2);
+      border-top: 1px solid var(--bg3);
+      border-bottom: 1px solid var(--bg3);
+    }
+    .modes-inner { max-width: 1100px; margin: 0 auto; }
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 60px;
+    }
+    .mode-card {
+      border-radius: 14px;
+      padding: 24px 20px;
+      border: 1px solid var(--bg3);
+      text-align: center;
+      transition: transform .2s;
+    }
+    .mode-card:hover { transform: translateY(-3px); }
+    .mode-card.green  { background: rgba(83,141,78,.12);  border-color: rgba(83,141,78,.3); }
+    .mode-card.gold   { background: rgba(181,159,59,.12); border-color: rgba(181,159,59,.3); }
+    .mode-card.red    { background: rgba(231,76,60,.12);  border-color: rgba(231,76,60,.3); }
+    .mode-card.blue   { background: rgba(52,152,219,.12); border-color: rgba(52,152,219,.3); }
+    .mode-card.purple { background: rgba(155,89,182,.12); border-color: rgba(155,89,182,.3); }
+    .mode-emoji { font-size: 32px; margin-bottom: 12px; }
+    .mode-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .mode-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* ── HOW IT WORKS ── */
+    .how-inner { max-width: 800px; margin: 0 auto; }
+    .steps { margin-top: 60px; display: flex; flex-direction: column; gap: 0; }
+    .step {
+      display: flex;
+      gap: 28px;
+      align-items: flex-start;
+      padding: 32px 0;
+      border-bottom: 1px solid var(--bg3);
+      position: relative;
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 64px;
+      line-height: 1;
+      color: var(--bg3);
+      min-width: 70px;
+      transition: color .3s;
+    }
+    .step:hover .step-num { color: var(--green); }
+    .step-content { padding-top: 8px; }
+    .step-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .step-desc { color: var(--muted); font-size: 15px; line-height: 1.6; }
+
+    /* color legend */
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 40px;
+      padding: 24px;
+      background: var(--bg2);
+      border-radius: 14px;
+      border: 1px solid var(--bg3);
+    }
+    .legend-item { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
+    .legend-dot {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    /* ── CTA BOTTOM ── */
+    .cta-section {
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .cta-section .section-title { margin-bottom: 16px; }
+    .cta-section .section-desc { margin: 0 auto 40px; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--bg3);
+      padding: 32px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 3px;
+      color: var(--green);
+    }
+    .footer-logo span { color: var(--gold); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: color .2s;
+    }
+    .footer-link:hover { color: var(--text); }
+    .footer-copy { color: var(--muted); font-size: 12px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      nav { padding: 16px 20px; }
+      .stats-bar { gap: 24px; padding: 24px 20px; }
+      footer { flex-direction: column; text-align: center; padding: 28px 20px; }
+      .footer-links { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">HARF<span>OLOG</span></div>
+    <a class="nav-link" href="../index.html">Anasayfa</a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">Android için ücretsiz</div>
+      <h1 class="hero-title">HARFOLOG</h1>
+      <p class="hero-sub">TÜRKÇE KELİME BULMA OYUNU</p>
+
+      <div class="tile-demo">
+        <div class="tile">H</div>
+        <div class="tile">A</div>
+        <div class="tile">R</div>
+        <div class="tile">F</div>
+        <div class="tile">O</div>
+        <div class="tile">L</div>
+        <div class="tile">O</div>
+		<div class="tile">G</div>
+      </div>
+
+      <div class="cta-group">
+        <a class="btn-primary" href="#" target="_blank">
+          ▶ Google Play'den İndir
+        </a>
+        <a class="btn-secondary" href="#nasil">
+          Nasıl Oynanır?
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-num">5+</div>
+      <div class="stat-label">Oyun Modu</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">10K+</div>
+      <div class="stat-label">Türkçe Kelime</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">2–15</div>
+      <div class="stat-label">Harf Seçeneği</div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section>
+    <div class="features">
+      <p class="section-label">Özellikler</p>
+      <h2 class="section-title">NE SUNAR?</h2>
+      <p class="section-desc">Harfolog, Türkçe kelime dağarcığını geliştirirken eğlenceli vakit geçirmeni sağlar.</p>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🇹🇷</div>
+          <div class="feature-title">Tamamen Türkçe</div>
+          <div class="feature-desc">Türkçe sözlük kontrolüyle, sadece gerçek Türkçe kelimelerle oynarsın. Dil becerini güçlendir.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <div class="feature-title">Günlük Hedefler</div>
+          <div class="feature-desc">Her gün yeni görevler, ödüller ve jetonlar. Serini koru, liderlik sıralamasına gir.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🏆</div>
+          <div class="feature-title">Liderlik Sıralaması</div>
+          <div class="feature-desc">Gerçek oyuncularla yarış. Haftalık sıralamada zirveye çık, arkadaşlarını geç.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🃏</div>
+          <div class="feature-title">Joker Sistemi</div>
+          <div class="feature-desc">Harf Eleme ve Otomatik Harf Yazma jokerleriyle sıkıştığında bir adım öne geç.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🌙</div>
+          <div class="feature-title">Koyu / Açık Tema</div>
+          <div class="feature-desc">Gözlerin için en uygun temayı seç. Gece karanlıkta, gündüz aydınlıkta oyna.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <div class="feature-title">Detaylı İstatistik</div>
+          <div class="feature-desc">Tahmin dağılımın, başarı yüzden, aktif serin. Tüm gelişimini takip et.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODES -->
+  <section class="modes-section">
+    <div class="modes-inner">
+      <p class="section-label">Oyun Modları</p>
+      <h2 class="section-title">BEŞ FARKLI MOD</h2>
+      <p class="section-desc">Her ruh haline uygun bir mod var. Klasikten çılgın meydan okumaya kadar.</p>
+
+      <div class="modes-grid">
+        <div class="mode-card green">
+          <div class="mode-emoji">🟢</div>
+          <div class="mode-name">KLASİK</div>
+          <div class="mode-desc">5 harfli kelime, 5 tahmin. Wordle'ın Türkçe ruhu.</div>
+        </div>
+        <div class="mode-card gold">
+          <div class="mode-emoji">✍️</div>
+          <div class="mode-name">SENİN SEÇİMİN</div>
+          <div class="mode-desc">Harf sayısını kendin belirle, zorluğu ayarla.</div>
+        </div>
+        <div class="mode-card red">
+          <div class="mode-emoji">⏱️</div>
+          <div class="mode-name">MEYDAN OKUMA</div>
+          <div class="mode-desc">Rastgele harf sayısı + geri sayım. Baskı altında düşün!</div>
+        </div>
+        <div class="mode-card blue">
+          <div class="mode-emoji">🎲</div>
+          <div class="mode-name">RASTGELE</div>
+          <div class="mode-desc">Süre sınırsız ama kelime tamamen rastgele. Şansa güven.</div>
+        </div>
+        <div class="mode-card purple">
+          <div class="mode-emoji">📅</div>
+          <div class="mode-name">GÜNÜN KELİMESİ</div>
+          <div class="mode-desc">Her gün herkes için aynı kelime. Tek şansın var!</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="nasil">
+    <div class="how-inner">
+      <p class="section-label">Nasıl Oynanır?</p>
+      <h2 class="section-title">ÇOK KOLAY</h2>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <div class="step-title">Mod Seç</div>
+            <div class="step-desc">Ana ekrandan istediğin oyun modunu seç. Klasik, meydan okuma, günlük — hepsi seni bekliyor.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <div class="step-title">Kelime Tahmin Et</div>
+            <div class="step-desc">Ekrandaki Türkçe klavyeyi kullanarak tahminini yaz. Her tahminde renkler sana yol gösterir.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <div class="step-title">Renkleri Oku</div>
+            <div class="step-desc">Renkler ipucunu gösterir. Doğru yerde yeşil, yanlış yerde sarı, yok gri.</div>
+            <div class="legend">
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#538d4e;"></div>
+                Doğru harf, doğru konum
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#b59f3b;"></div>
+                Doğru harf, yanlış konum
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot" style="background:#3a3a3c;"></div>
+                Kelimede yok
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-content">
+            <div class="step-title">Jeton Kazan, Joker Al</div>
+            <div class="step-desc">Her galibiyette jeton kazanırsın. Jetonlarınla mağazadan joker al, reklamları kaldır.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BOTTOM -->
+  <section style="background: var(--bg2); border-top: 1px solid var(--bg3); border-bottom: 1px solid var(--bg3);">
+    <div class="cta-section">
+      <p class="section-label">Ücretsiz İndir</p>
+      <h2 class="section-title">OYNAMAYA BAŞLA</h2>
+      <p class="section-desc">Android için tamamen ücretsiz. Hemen indir, kelime ustası ol.</p>
+      <div class="cta-group">
+        <a class="btn-primary" href="#" target="_blank">
+          ▶ Google Play'den İndir
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer id="gizlilik">
+    <div class="footer-logo">HARF<span>OLOG</span></div>
+    <div class="footer-links">
+      <a class="footer-link" href="../docs/harfolog_gizlilik_politikasi.html">Gizlilik Politikası</a>
+      <a class="footer-link" href="mailto:iamdfab@gmail.com">İletişim</a>
+    </div>
+    <div class="footer-copy">© 2026 Harfolog</div>
+  </footer>
+
+</body>
+</html>
